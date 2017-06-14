@@ -6,15 +6,30 @@
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js">
 </script>
     <script type="text/javascript">
-      $(document).ready(function() {
+      // TODO: Clean this mess up
+      function onClick() {
+        $('body').html('<div style="margin-top: 120px; text-align: center; vertical-align: center; color: #FFFFFF;">Loading...</div>');
         $.get('https://fryid66ux4.execute-api.us-east-1.amazonaws.com/prod/PyRon')
-          .then(function(data){
-            $('body').html('<img src="data:image/png;base64,' + data + '" />');
+          .then(function(data) {
+            $('body').html('<div style="background-image: url(data:image/png;base64,' + data + '); \
+              background-size: contain; \
+              position: absolute; \
+              background-position: center; \
+              background-repeat: no-repeat; \
+              height: 100%; \
+              width: 100%;" \
+            ></div>');
+          })
+          .catch(function() {
+            $('body').html('<div style="margin-top: 120px; text-align: center; vertical-align: center; color: #FFFFFF;">Oops, something went wrong</div>');
           });
+      }
+
+      $(document).ready(function() {
+        onClick()
       });
     </script>
   </head>
-  <body>
-    <img id="image" />
+  <body style="margin: 0; background-color: #1D1D1D; cursor: pointer;" onclick="onClick()">
   </body>
 </html>

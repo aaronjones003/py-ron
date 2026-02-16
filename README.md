@@ -23,7 +23,3 @@ python app.py
 ```
 
 Note: You'll need to add your Unsplash API client ID to the `clientId` variable.
-
-## AI Monorepo Integration
-
-This project is integrated as a submodule in the AI Monorepo for enhanced AI-assisted development. Changes made here can be pushed back to this repository independently.

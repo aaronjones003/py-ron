@@ -2,34 +2,228 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>py-ron Example</title>
-    <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js">
-</script>
-    <script type="text/javascript">
-      // TODO: Clean this mess up
-      function onClick() {
-        $('body').html('<div style="margin-top: 120px; text-align: center; vertical-align: center; color: #FFFFFF;">Loading...</div>');
-        $.get('https://fryid66ux4.execute-api.us-east-1.amazonaws.com/prod/PyRon')
-          .then(function(data) {
-            $('body').html('<div style="background-image: url(data:image/png;base64,' + data + '); \
-              background-size: contain; \
-              position: absolute; \
-              background-position: center; \
-              background-repeat: no-repeat; \
-              height: 100%; \
-              width: 100%;" \
-            ></div>');
-          })
-          .catch(function() {
-            $('body').html('<div style="margin-top: 120px; text-align: center; vertical-align: center; color: #FFFFFF;">Oops, something went wrong</div>');
-          });
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Py-Ron</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        background-color: #1D1D1D;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        color: #FFFFFF;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      #image-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        position: relative;
+      }
+      
+      #image {
+        max-width: 100%;
+        max-height: calc(100vh - 180px);
+        object-fit: contain;
+        display: none;
+      }
+      
+      #status {
+        text-align: center;
+        font-size: 18px;
+        color: #CCCCCC;
+      }
+      
+      #controls {
+        padding: 20px;
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+        background-color: #2A2A2A;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+      }
+      
+      button {
+        padding: 12px 24px;
+        font-size: 16px;
+        font-weight: 600;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 120px;
+        justify-content: center;
+      }
+      
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      
+      #refresh-btn {
+        background-color: #4A90E2;
+        color: white;
+      }
+      
+      #refresh-btn:hover:not(:disabled) {
+        background-color: #357ABD;
+        transform: translateY(-1px);
+      }
+      
+      #download-btn {
+        background-color: #50C878;
+        color: white;
+      }
+      
+      #download-btn:hover:not(:disabled) {
+        background-color: #3FA863;
+        transform: translateY(-1px);
+      }
+      
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      
+      @media (max-width: 640px) {
+        button {
+          flex: 1;
+          min-width: 140px;
+        }
+        
+        #controls {
+          padding: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="image-container">
+      <div id="status">Loading your Ron Swanson quote...</div>
+      <img id="image" alt="Ron Swanson Quote" />
+    </div>
+    
+    <div id="controls">
+      <button id="refresh-btn">
+        <span>🔄</span>
+        <span>New Quote</span>
+      </button>
+      <button id="download-btn" disabled>
+        <span>⬇️</span>
+        <span>Download</span>
+      </button>
+    </div>
+
+    <script>
+      let currentImageData = null;
+      let retryCount = 0;
+      const MAX_RETRIES = 5;
+
+      const statusEl = document.getElementById('status');
+      const imageEl = document.getElementById('image');
+      const refreshBtn = document.getElementById('refresh-btn');
+      const downloadBtn = document.getElementById('download-btn');
+
+      function setStatus(message) {
+        statusEl.textContent = message;
+        statusEl.style.display = 'block';
       }
 
-      $(document).ready(function() {
-        onClick()
-      });
+      function showImage(base64Data) {
+        currentImageData = base64Data;
+        imageEl.src = 'data:image/png;base64,' + base64Data;
+        imageEl.style.display = 'block';
+        statusEl.style.display = 'none';
+        downloadBtn.disabled = false;
+      }
+
+      function hideImage() {
+        imageEl.style.display = 'none';
+        downloadBtn.disabled = true;
+      }
+
+      async function fetchQuote() {
+        retryCount = 0;
+        await attemptFetch();
+      }
+
+      async function attemptFetch() {
+        try {
+          hideImage();
+          refreshBtn.disabled = true;
+          
+          const attemptText = retryCount > 0 ? ` (Attempt ${retryCount + 1}/${MAX_RETRIES})` : '';
+          refreshBtn.innerHTML = '<span class="spinner"></span><span>Loading...</span>';
+          setStatus(`Generating Ron Swanson wisdom...${attemptText}`);
+
+          const response = await fetch('https://fryid66ux4.execute-api.us-east-1.amazonaws.com/prod/PyRon');
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          const data = await response.text();
+          
+          if (!data || data.length === 0) {
+            throw new Error('Empty response');
+          }
+
+          showImage(data);
+          refreshBtn.innerHTML = '<span>🔄</span><span>New Quote</span>';
+          refreshBtn.disabled = false;
+          retryCount = 0;
+
+        } catch (error) {
+          console.error('Fetch error:', error);
+          
+          if (retryCount < MAX_RETRIES - 1) {
+            retryCount++;
+            setStatus(`Connection failed. Retrying... (${retryCount}/${MAX_RETRIES})`);
+            setTimeout(attemptFetch, 1000);
+          } else {
+            setStatus('Failed to load quote after 5 attempts. Please try again.');
+            refreshBtn.innerHTML = '<span>🔄</span><span>Try Again</span>';
+            refreshBtn.disabled = false;
+            retryCount = 0;
+          }
+        }
+      }
+
+      function downloadImage() {
+        if (!currentImageData) return;
+
+        const link = document.createElement('a');
+        link.href = 'data:image/png;base64,' + currentImageData;
+        link.download = `ron-swanson-${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      refreshBtn.addEventListener('click', fetchQuote);
+      downloadBtn.addEventListener('click', downloadImage);
+
+      fetchQuote();
     </script>
-  </head>
-  <body style="margin: 0; background-color: #1D1D1D; cursor: pointer;" onclick="onClick()">
   </body>
 </html>

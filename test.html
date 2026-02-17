@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Py-Ron</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+        .test {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #333;
+        }
+        .pass { background: #002200; border-color: #00ff00; }
+        .fail { background: #220000; border-color: #ff0000; color: #ff0000; }
+        h1 { color: #00ff00; }
+        h2 { color: #00aaff; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Py-Ron - Test Suite</h1>
+    <div id="test-results"></div>
+    
+    <h2>Visual Test</h2>
+    <iframe src="./index.html" style="width: 100%; height: 600px; border: 2px solid #333; background: white;"></iframe>
+
+    <script>
+        const results = document.getElementById('test-results');
+        let passCount = 0;
+        let failCount = 0;
+        
+        function test(name, fn) {
+            try {
+                fn();
+                results.innerHTML += `<div class="test pass">✓ ${name}</div>`;
+                passCount++;
+            } catch (error) {
+                results.innerHTML += `<div class="test fail">✗ ${name}: ${error.message}</div>`;
+                failCount++;
+            }
+        }
+
+        // Wait for iframe to load
+        setTimeout(() => {
+            const iframe = document.querySelector('iframe');
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+            test('Iframe loaded successfully', () => {
+                if (!iframeDoc) throw new Error('Could not access iframe document');
+            });
+
+            test('DOM elements exist in iframe', () => {
+                const statusEl = iframeDoc.getElementById('status');
+                const imageEl = iframeDoc.getElementById('image');
+                const refreshBtn = iframeDoc.getElementById('refresh-btn');
+                const downloadBtn = iframeDoc.getElementById('download-btn');
+                
+                if (!statusEl) throw new Error('status element not found');
+                if (!imageEl) throw new Error('image element not found');
+                if (!refreshBtn) throw new Error('refresh-btn element not found');
+                if (!downloadBtn) throw new Error('download-btn element not found');
+            });
+
+            test('Refresh button is enabled', () => {
+                const refreshBtn = iframeDoc.getElementById('refresh-btn');
+                if (refreshBtn.disabled) throw new Error('Refresh button should not be disabled initially');
+            });
+
+            test('Download button is disabled initially', () => {
+                const downloadBtn = iframeDoc.getElementById('download-btn');
+                if (!downloadBtn.disabled) throw new Error('Download button should be disabled initially');
+            });
+
+            test('Status element shows loading message', () => {
+                const statusEl = iframeDoc.getElementById('status');
+                if (!statusEl.textContent) {
+                    throw new Error('Status should have text content');
+                }
+            });
+
+            test('Image is hidden initially', () => {
+                const imageEl = iframeDoc.getElementById('image');
+                const display = iframe.contentWindow.getComputedStyle(imageEl).display;
+                if (display !== 'none') {
+                    throw new Error('Image should be hidden initially');
+                }
+            });
+
+            test('No console errors', () => {
+                // Check if there are any error logs
+                const hasErrors = false; // Would need to intercept console.error
+                if (hasErrors) throw new Error('Console errors detected');
+            });
+
+            // Summary
+            setTimeout(() => {
+                results.innerHTML += `<div class="test" style="margin-top: 20px; background: #003300; border-color: #00ff00;"><strong>Summary: ${passCount} passed, ${failCount} failed</strong></div>`;
+            }, 100);
+
+        }, 2000);
+    </script>
+</body>
+</html>

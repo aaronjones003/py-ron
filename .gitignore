@@ -4,3 +4,4 @@
 .DS_Store
 .Python
 *.png
+node_modules/

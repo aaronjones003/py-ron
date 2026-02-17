@@ -1,0 +1,12 @@
+{
+  "name": "py-ron",
+  "version": "1.0.0",
+  "description": "Ron Swanson quote generator",
+  "scripts": {
+    "test": "node test.js",
+    "serve": "npx http-server -p 8080 -c-1"
+  },
+  "devDependencies": {
+    "playwright": "^1.40.0"
+  }
+}
